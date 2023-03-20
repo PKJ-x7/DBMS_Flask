@@ -1,0 +1,17 @@
+bcrypt==4.0.1
+certifi @ file:///C:/b/abs_85o_6fm0se/croot/certifi_1671487778835/work/certifi
+click @ file:///C:/ci/click_1646056762388/work
+colorama @ file:///C:/b/abs_a9ozq0l032/croot/colorama_1672387194846/work
+Flask @ file:///C:/b/abs_ef16l83sif/croot/flask_1671217367534/work
+Flask-Bcrypt==1.0.1
+Flask-Login==0.6.2
+Flask-MySQLdb==1.0.1
+itsdangerous @ file:///tmp/build/80754af9/itsdangerous_1621432558163/work
+Jinja2 @ file:///C:/b/abs_7cdis66kl9/croot/jinja2_1666908141852/work
+MarkupSafe @ file:///C:/ci/markupsafe_1654508036328/work
+mysql-connector-python==8.0.32
+mysqlclient==2.1.1
+protobuf==3.20.3
+PyYAML @ file:///C:/b/abs_d0g7dqt2xw/croot/pyyaml_1670514768165/work
+Werkzeug @ file:///C:/b/abs_17q5kgb8bo/croot/werkzeug_1671216014857/work
+wincertstore==0.2

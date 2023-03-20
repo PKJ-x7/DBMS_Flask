@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Entry</title>
+</head>
+<body>
+  <h1>Edit Entry</h1>
+  <form action="/update_entry" method="post">
+    <input type="hidden" name="table" value="{{ table }}">
+    <input type="hidden" name="primary_key" value="{{ primary_key }}">
+    <input type="hidden" name="value" value="{{ value }}">
+    <table>
+      {% for column in columns %}
+      <tr>
+        <td>{{ column }}</td>
+        <td><input type="text" name="{{ column }}" value="{{ row[loop.index0] }}"></td>
+      </tr>
+      {% endfor %}
+    </table>
+    <input type="submit" value="Update">
+  </form>
+</body>
+</html>

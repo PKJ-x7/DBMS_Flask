@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <style>
+        .contact-info {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.contact-info h2 {
+  margin-top: 0;
+  font-size: 24px;
+  text-align: center;
+}
+
+.contact-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.contact-info li {
+  margin-bottom: 10px;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.contact-info li strong {
+  font-weight: bold;
+  margin-right: 10px;
+}
+        .footer{
+        background:rgba(46, 40, 40, 0.842);
+        padding:30px 0px;
+        font-family: 'Play', sans-serif;
+        text-align:center;
+        position:fixed;
+        left:0px;
+        bottom:0px;
+        height:20%;
+        width:100%;
+        }
+
+        .footer .row{
+        width:100%;
+        margin:1% 0%;
+        padding:0.6% 0%;
+        color:gray;
+
+        font-size:0.8em;
+        }
+
+        .footer .row a{
+        text-decoration:none;
+        color:rgb(226, 223, 223);
+
+        transition:0.5s;
+        }
+
+        .footer .row a:hover{
+        color:#fff;
+        }
+
+        .footer .row ul{
+        width:100%;
+        }
+
+        .footer .row ul li{
+        display:inline-block;
+        margin:0px 30px;
+        }
+
+        .footer .row a i{
+        font-size:2em;
+        margin:0% 1%;
+        }
+
+        @media (max-width:720px){
+        .footer{
+        text-align:left;
+        padding:5%;
+        }
+        .footer .row ul li{
+        display:block;
+        margin:10px 0px;
+        text-align:left;
+        }
+        .footer .row a i{
+        margin:0% 3%;
+        }
+
+        }
+        header {
+    background-color: #333333;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+  }
+
+  header h1 {
+    font-size: 45px;
+    font-family: Times;
+    margin: 0;
+  }
+  header h2 {
+    font-size: 30px;
+    font-family: Roboto;
+    margin: 0;
+  }
+  header img {
+    width: auto;
+    height: 70%;
+    /* border-radius: 50%; */
+    position: absolute;
+    top: 10px;
+    left: 10px;
+  }
+      </style>
+        <link rel="stylesheet" type="text/css" href="styles_contact.css">
+    </head>
+
+    <body>
+      <header>
+
+        <div class="header-text">
+          <h1>Indian Institute of Technology Gandhinagar</h1> <hr>
+          <h2>Telephone Directory</h2>
+        </div>
+      </header>
+        <div class="contact-info">
+            <h2>Contact Information</h2>
+            <ul>
+              <li><strong>Name:</strong> {{ name }}</li>
+              <li><strong>Email:</strong> {{ email }}</li>
+              <li><strong>Phone:</strong> {{ phone }}</li>
+            </ul>
+          </div>
+          <div class="footer">
+
+
+            <div class="row">
+            <ul>
+            <li><a href="{{ url_for('home') }}">Home Page</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+
+
+
+            </ul>
+            </div>
+
+            <div class="row">
+            Designed by Group "Ono"
+            </div>
+            </div>
+            </footer>
+          
+    </body>
+</html>

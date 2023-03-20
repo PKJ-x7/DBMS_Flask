@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Select Columns</title>
+  </head>
+  <body>
+    <h1>Select Columns for {{ table }}</h1>
+    <form action="/table" method="post">
+      <input type="hidden" name="table" value="{{ table }}">
+      {% for column in columns %}
+      <label>{{ column }}</label>
+      <input type="text" name="{{ column }}"><br>
+      {% endfor %}
+      <button type="submit">Submit</button>
+    </form>
+  </body>
+</html>
