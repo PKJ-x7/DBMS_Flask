@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-from flask_login import LoginManager, login_user, current_user, login_required, logout_user, UserMixin
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
+# from flask_login import LoginManager, login_user, current_user, login_required, logout_user, UserMixin
 from flask_bcrypt import Bcrypt
 import mysql.connector
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import re
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'DBMS_$u(k$'
@@ -37,11 +38,30 @@ cursor.execute("SHOW TABLES")
 tables = cursor.fetchall()
 tables = [table[0] for table in tables]
 
+@app.after_request
+def add_no_cache_header(response):
+    print("no cache called")
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
+@app.route('/', methods=['GET', 'POST'])
+def home_red():
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
     # Output message if something goes wrong...
     msg = ''
+    session.clear()
+    if 'username' in session:
+        # Log the user out and redirect them to the login page
+        session.pop('username', None)
+        session.pop('next', None)
+        session.clear()
     # Check if "username" and "password" POST requests exist (user submitted form)
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         # Create variables for easy access
@@ -49,27 +69,32 @@ def login():
         password = request.form['password']
         # Check if account exists using MySQL
         cursor = db.cursor()
-        cursor.execute('SELECT * FROM phone_directory_user WHERE username = %s AND password = %s', (username, password,))
+        cursor.execute('SELECT * FROM phone_directory_user WHERE username = %s', (username,))
         # Fetch one record and return result
         account = cursor.fetchone()
         # If account exists in accounts table in out database
         if account:
-            print(account)
-            # Create session data, we can access this data in other routes
-            session['loggedin'] = True
-            session['id'] = account[0]
-            session['username'] = account[1]
-            # session['email'] = account[3]
-            # Redirect to home page
-            return redirect(url_for('home'))
+            hash_pass = account[2]
+            if check_password_hash(hash_pass, password):
+                print(account)
+                # Create session data, we can access this data in other routes
+                session['loggedin'] = True
+                session['id'] = account[0]
+                session['username'] = account[1]
+                # session['email'] = account[3]
+                # Redirect to home page
+                return redirect(url_for('home'))
+            else:
+                # Account doesnt exist or username/password incorrect
+                msg = 'Incorrect password!'
         else:
-            # Account doesnt exist or username/password incorrect
-            msg = 'Incorrect username/password!'
+            msg = 'User not found'
     # Show the login form with message (if any)
-    return render_template('index.html', msg=msg)
+    return render_template('login.html', msg=msg)
 
 
 @app.route('/login/logout')
+# @login_required
 def logout():
     # Remove session data, this will log the user out
    session.pop('loggedin', None)
@@ -92,10 +117,14 @@ def register():
         # Check if account exists using MySQL
         cursor = db.cursor()
         cursor.execute('SELECT * FROM phone_directory_user WHERE username = %s', (username,))
-        account = cursor.fetchone()
+        username_ = cursor.fetchone()
+        cursor.execute('SELECT * FROM phone_directory_user WHERE email = %s', (email,))
+        email_ = cursor.fetchone()
         # If account exists show error and validation checks
-        if account:
-            msg = 'Account already exists!'
+        if username_:
+            msg = 'User already exists!'
+        elif email_:
+            msg = 'Email ID already exists!'
         elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
             msg = 'Invalid email address!'
         elif not re.match(r'[A-Za-z0-9]+', username):
@@ -104,7 +133,8 @@ def register():
             msg = 'Please fill out the form!'
         else:
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
-            cursor.execute('INSERT INTO phone_directory_user VALUES (NULL, %s, %s, %s)', (username, password, email,))
+            hash_pass = generate_password_hash(password)
+            cursor.execute('INSERT INTO phone_directory_user VALUES (NULL, %s, %s, %s)', (username, hash_pass, email,))
             db.commit()
             msg = 'You have successfully registered!'
     elif request.method == 'POST':
@@ -115,6 +145,7 @@ def register():
 
 
 @app.route('/login/home')
+# @login_required
 def home():
     # Check if user is loggedin
     if 'loggedin' in session:
@@ -128,6 +159,7 @@ def home():
 
 # http://localhost:5000/pythinlogin/profile - this will be the profile page, only accessible for loggedin users
 @app.route('/login/profile')
+# @login_required
 def profile():
     # Check if user is loggedin
     if 'loggedin' in session:
@@ -141,11 +173,13 @@ def profile():
     return redirect(url_for('login'))
 
 @app.route('/admin_view')
+# @login_required
 def admin_view():
     return render_template('admin_view.html', tables=tables)
 
 
 @app.route('/table', methods=['GET', 'POST'])
+# @login_required
 def table():
     if request.method == 'POST':
         # Get the selected table from the form
@@ -173,6 +207,7 @@ def table():
     return render_template('select_table.html', tables=tables)
 
 @app.route('/rename_table/<table>', methods=['GET', 'POST'])
+# @login_required
 def rename_table(table):
     # conn = mysql.connect()
     cursor = db.cursor()
@@ -197,6 +232,7 @@ def rename_table(table):
     return render_template('rename_table.html', table=table)
 
 @app.route('/add_entry', methods=['POST'])
+# @login_required
 def add_entry():
     # Get the form data from the request
     table = request.form['table']
@@ -221,6 +257,7 @@ def add_entry():
     return redirect(url_for('table', table=table), code=307)
 
 @app.route('/delete_entry', methods=['POST'])
+# @login_required
 def delete_entry():
     # Get the form data from the request
     table = request.form['table']
@@ -238,6 +275,7 @@ def delete_entry():
     return redirect(url_for('table', table=table), code=307)
 
 @app.route('/edit_entry', methods=['POST'])
+# @login_required
 def edit_entry():
     table = request.form['table']
     primary_key = request.form['primary_key']
@@ -256,6 +294,7 @@ def edit_entry():
     return render_template('edit_entry.html', table=table, primary_key=primary_key, value=value, columns=columns, row=row)
 
 @app.route('/update_entry', methods=['POST'])
+# @login_required
 def update_entry():
     table = request.form['table']
     primary_key = request.form['primary_key']
@@ -279,21 +318,57 @@ def update_entry():
     return redirect(url_for('table', table=table), code=307)
 
 @app.route('/user_views')
+# @login_required
 def user_views():
-    return render_template('new.html')
+    return render_template('tri_options.html')
+
+#add next links for tables
+@app.route('/student_tables')
+# @login_required
+def student_table_links():
+    return render_template('student_table_links.html')
+
+@app.route('/facilities_tables')
+# @login_required
+def facilities_table_links():
+    return render_template('facilities_table_links.html')
+
+@app.route('/people_tables')
+# @login_required
+def people_table_links():
+    return render_template('people_table_links.html')
 
 # Route for displaying the table for Administration option
 @app.route('/faculty')
+# @login_required
 def faculty():
-    table_name = "Faculty At IITGN"
+    table_name = "Faculty"
     query = "SELECT faculty.faculty_id, faculty.first_name, faculty.last_name, faculty_dept.dept_name, faculty_dept.designation, faculty_office.block_no, faculty_office.room_no, office.office_phone_number  " \
             "FROM faculty join faculty_dept on faculty.faculty_id = faculty_dept.faculty_id " \
             "join faculty_office on faculty.faculty_id = faculty_office.faculty_id " \
             "join office on faculty_office.block_no = office.block_no and faculty_office.room_no = office.room_no"
     return execute_query(query, table_name)
 
+# can edit this func to use diff queries for diff tables similar to "members" func below
+@app.route('/search', methods=['POST'])
+# @login_required
+def search():
+    table_name = request.form['table'].lower()
+    # print(table_name)
+    name = request.form['search_input'].split()[0].capitalize()
+    print(name)
+    query = f"SELECT faculty.faculty_id, faculty.first_name, faculty.last_name, faculty_dept.dept_name, faculty_dept.designation, faculty_office.block_no, faculty_office.room_no, office.office_phone_number  " \
+            f"FROM faculty join faculty_dept on faculty.faculty_id = faculty_dept.faculty_id " \
+            f"join faculty_office on faculty.faculty_id = faculty_office.faculty_id " \
+            f"join office on faculty_office.block_no = office.block_no and faculty_office.room_no = office.room_no " \
+            f"where {table_name}.first_name = '{name}'"
+    print(query)
+    table_name = table_name.capitalize()
+    return execute_query(query, table_name)
+
 # Route for displaying the table for Establishment option
 @app.route('/student')
+# @login_required
 def student():
     table_name = "Student"
     query = "select student.student_id, student.first_name, student.last_name, student_enrolled.program_name, student_enrolled.dept_name FROM student join student_enrolled on student.student_id = student_enrolled.student_id"
@@ -301,6 +376,7 @@ def student():
 
 # Route for displaying the table for Finance option
 @app.route('/alumni')
+# @login_required
 def alumni():
     table_name = "Alumni"
     query = "select alumni.alumni_id, alumni.first_name, alumni.last_name, alumni_enrolled.program_name, alumni_enrolled.dept_name, alumni_enrolled.end_year FROM alumni join alumni_enrolled on alumni.alumni_id = alumni_enrolled.alumni_id"
@@ -308,6 +384,7 @@ def alumni():
 
 # Route for displaying the table for Administrative Branches option
 @app.route('/student_council')
+# @login_required
 def student_council():
     table_name = "Student Council"
     query = "select council_advisor.council_name, student_council.email_id, faculty.first_name, faculty.last_name from council_advisor join faculty on faculty.faculty_id = council_advisor.faculty_id " \
@@ -316,6 +393,7 @@ def student_council():
 
 # Route for displaying the table for Admission option
 @app.route('/student_group')
+# @login_required
 def student_group():
     table_name = "Student Group"
     query = "select group_part_of.group_name, student_group.email_id, group_part_of.council_name from group_part_of " \
@@ -324,8 +402,9 @@ def student_group():
 
 # Route for displaying the table for Examination option
 @app.route('/services')
+# @login_required
 def services():
-    table_name = "Services At IITGN"
+    table_name = "Services"
     query = "select service.service_name, service.email_id, service_office.block_no, service_office.room_no, office.office_phone_number, faculty.first_name, faculty.last_name, faculty_head_service.designation " \
             "from faculty_head_service join service on service.service_name = faculty_head_service.service_name join faculty " \
             "on faculty_head_service.faculty_id = faculty.faculty_id join service_office " \
@@ -335,8 +414,9 @@ def services():
 
 # Route for displaying the table for Departments option
 @app.route('/centres')
+# @login_required
 def centre():
-    table_name = "Centres At IITGN"
+    table_name = "Centres"
     query = "select centre.centre_name, centre.email_id, centre_office.block_no, centre_office.room_no, office.office_phone_number, faculty.first_name, faculty.last_name, faculty_head_centre.designation " \
             "from faculty_head_centre join centre " \
             "on centre.centre_name = faculty_head_centre.centre_name join faculty " \
@@ -348,8 +428,9 @@ def centre():
 
 # Route for displaying the table for Hostels option
 @app.route('/labs')
+# @login_required
 def labs():
-    table_name = "Labs At IITGN"
+    table_name = "Labs"
     query = "select lab.lab_name, lab.email_id, lab_dept.dept_name, lab_office.block_no, lab_office.room_no, office.office_phone_number from lab_dept " \
             "join lab on lab.lab_name = lab_dept.lab_name join lab_office on lab_office.lab_name = lab.lab_name " \
             "join office on lab_office.block_no = office.block_no and lab_office.room_no = office.room_no"
@@ -372,7 +453,7 @@ def execute_query(query, table_name="Placeholder"):
         col_names = [desc[0] for desc in cursor.description]
 
         # Render the table template with query results
-        if table_name not in ['Student', 'Faculty At IITGN', 'Alumni']:
+        if table_name not in ['Student', 'Faculty', 'Alumni']:
             return render_template('view_members.html', table=table_name, data=rows, columns=col_names)
         else:
             return render_template('view_contacts.html', table=table_name, data=rows, columns=col_names)
@@ -386,6 +467,7 @@ def execute_query(query, table_name="Placeholder"):
     #     db.close()
 
 @app.route('/members', methods=['POST'])
+# @login_required
 def members():
     table = request.form['table']
     primary_key = request.form['primary_key']
@@ -408,7 +490,7 @@ def members():
              f"on student.student_id = student_enrolled.student_id " \
              f"where student_group_member.group_name = '{value}'"
 
-    query3 = f"select staff.first_name, staff.last_name, service_staff.roles from staff, staff.email_id " \
+    query3 = f"select staff.first_name, staff.last_name, service_staff.roles, staff.email_id from staff " \
              f"join service_staff " \
              f"on staff.staff_id = service_staff.staff_id " \
              f"where service_staff.service_name = '{value}'"
@@ -428,9 +510,9 @@ def members():
     queries = {
         'Student Council' : query1,
         'Student Group' : query2,
-        'Services At IITGN' : query3,
-        'Centres At IITGN' : query4,
-        'Labs At IITGN' : query5
+        'Services' : query3,
+        'Centres' : query4,
+        'Labs' : query5
     }
     cursor.execute(queries[table])
     rows = cursor.fetchall()
@@ -442,6 +524,7 @@ def members():
     return render_template('members.html', table=value, data=rows, columns=col_names)
 
 @app.route('/contact', methods=['POST'])
+# @login_required
 def contact():
     table = request.form['table']
     primary_key = request.form['primary_key']
@@ -471,7 +554,7 @@ def contact():
     queries = {
         'Student': query1,
         'Alumni': query2,
-        'Faculty At IITGN': query3
+        'Faculty': query3
     }
 
     cursor.execute(queries[table])
@@ -485,3 +568,5 @@ def contact():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+# ADD LOGIN MANAGER

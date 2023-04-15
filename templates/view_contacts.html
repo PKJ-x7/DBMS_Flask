@@ -144,6 +144,12 @@ label{
     </div>
   </header>
     <h1>{{ table }}</h1>
+    <form method="POST" action="{{ url_for('search') }}">
+        <label for="search_input">Search:</label>
+        <input type="text" name="search_input" id={{ table + "search_input" }}>
+        <input type="hidden" name="table" value="{{ table }}">
+        <input type="submit" value="Search">
+    </form>
     <table>
         <thead>
             <tr>
