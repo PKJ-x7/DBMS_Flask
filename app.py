@@ -19,13 +19,15 @@ login_manager.login_view = 'login'
 db = mysql.connector.connect(
   host="localhost",
   user="root",
-  password="thursday@1289",
+  password="pkj#rolls#sql",
   database="phone_directory"
 )
 
 
 # Get a list of tables from the database
 cursor = db.cursor(buffered=True)
+cursor.execute("delete from locks_")
+# db.commit()
 cursor.execute("SHOW TABLES")
 tables = cursor.fetchall()
 tables = [table[0] for table in tables]
@@ -314,6 +316,40 @@ def delete_entry():
 
     return redirect(url_for('table', table=table), code=307)
 
+
+# function to lock a row for editing
+def lock_row(table, row_id):
+    # get the user ID from the session
+    user_id = current_user.email
+
+    # insert a new row into the lock table
+    cursor = db.cursor()
+    insert_query = "INSERT INTO locks_ (table_names, row_id, user_id) VALUES (%s, %s, %s)"
+    cursor.execute(insert_query, (table, row_id, user_id))
+    db.commit()
+
+
+# function to release a lock on a row
+def release_lock(table, row_id):
+    # delete the row from the lock table
+    cursor = db.cursor()
+    delete_query = "DELETE FROM locks_ WHERE table_names = %s AND row_id = %s"
+    cursor.execute(delete_query, (table, row_id,))
+    db.commit()
+
+
+# function to check if a row is locked
+def is_locked(table, row_id):
+    cursor = db.cursor()
+    select_query = "SELECT user_id FROM locks_ WHERE table_names = %s AND row_id = %s"
+    cursor.execute(select_query, (table, row_id,))
+    result = cursor.fetchone()
+    if result:
+        return True
+    else:
+        return False
+
+
 @app.route('/edit_entry', methods=['POST'])
 @login_required
 def edit_entry():
@@ -321,16 +357,29 @@ def edit_entry():
     primary_key = request.form['primary_key']
     value = request.form['value']
 
+    # check if the row is already locked
+    if is_locked(table, value):
+        flash("This row is being edited by another user. Please try again later.")
+        cursor = db.cursor()
+        cursor.execute(f"SELECT * FROM {table}")
+        columns = [desc[0] for desc in cursor.description]
+        data = cursor.fetchall()
+        cursor.execute(
+            f"SELECT column_name FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_NAME = '{table}' AND CONSTRAINT_NAME = 'PRIMARY'")
+        primary_key = cursor.fetchone()[0]
+        return render_template('table.html' ,table=table, columns=columns, data=data, primary_key=primary_key)
+
+    # lock the row for editing
+    lock_row(table, value)
     # Get the column names for the specified table
-    cursor = db.cursor()
+
+    cursor = db.cursor(buffered=True)
     cursor.execute(f"SELECT * FROM {table}")
     columns = [desc[0] for desc in cursor.description]
-    cursor.execute(cursor.execute(f"SELECT * FROM {table} WHERE {primary_key} = '{value}' FOR UPDATE"))
+    # cursor.execute(f"SELECT * FROM {table} WHERE {primary_key} = '{value}' FOR UPDATE")
 
     # Get the data for the row being edited
     cursor.execute(f"SELECT * FROM {table} WHERE {primary_key} = '{value}'")
-    cursor.execute("SELECT RELEASE_LOCK(%s)", (primary_key,))
-    db.commit()
     row = cursor.fetchone()
     # print(columns, row)
     # Render the edit entry template with the column names and row data
@@ -356,6 +405,7 @@ def update_entry():
     cursor = db.cursor()
     cursor.execute(f"UPDATE {table} SET {update_string} WHERE {primary_key} = '{value}'")
     db.commit()
+    release_lock(table, value)
 
     # Redirect back to the table view for the updated table
     return redirect(url_for('table', table=table), code=307)
@@ -404,14 +454,37 @@ def search():
         return render_template('login.html', error=error)
     name = request.form['search_input'].split()[0].capitalize()
     # print(name)
-    query = f"SELECT faculty.faculty_id as ID, CONCAT_WS(' ',faculty.first_name,faculty.last_name) as Name, faculty_dept.dept_name as Department, faculty_dept.designation as Designation, CONCAT_WS('/',faculty_office.block_no, faculty_office.room_no) as Office, office.office_phone_number as 'Office Number'  " \
+    query1 = f"SELECT faculty.faculty_id as ID, CONCAT_WS(' ',faculty.first_name,faculty.last_name) as Name, faculty_dept.dept_name as Department, faculty_dept.designation as Designation, CONCAT_WS('/',faculty_office.block_no, faculty_office.room_no) as Office, office.office_phone_number as 'Office Number'  " \
             f"FROM faculty join faculty_dept on faculty.faculty_id = faculty_dept.faculty_id " \
             f"join faculty_office on faculty.faculty_id = faculty_office.faculty_id " \
             f"join office on faculty_office.block_no = office.block_no and faculty_office.room_no = office.room_no " \
             f"where {table_name}.first_name = '{name}'"
+
+    query2 = f"select alumni.alumni_id as ID, concat_ws(' ', alumni.first_name, alumni.last_name) as Name, " \
+             f"alumni_enrolled.program_name as Program, alumni_enrolled.dept_name as Department, alumni_enrolled.end_year as 'Graduation Year' " \
+             f"FROM alumni join alumni_enrolled on alumni.alumni_id = alumni_enrolled.alumni_id " \
+             f"where {table_name}.first_name = '{name}'"
+
+    query3 = f"select student.student_id as ID, concat_ws(' ', student.first_name, student.last_name) as Name, " \
+             f"student_enrolled.program_name as Program, student_enrolled.dept_name as Department, student_enrolled.start_year as 'Enrolment Year' " \
+             f"FROM student join student_enrolled on student.student_id = student_enrolled.student_id " \
+             f"where {table_name}.first_name = '{name}'"
+
+    query4 = f"select staff.staff_id as ID, concat_ws(' ', staff.first_name, staff.last_name) as Name FROM staff " \
+             f"where {table_name}.first_name = '{name}'"
+
+    queries = {
+        'Staff': query4,
+        'Student': query3,
+        'Alumni': query2,
+        'Faculty': query1
+    }
+    # cursor.execute(queries[table])
+    # rows = cursor.fetchall()
+
     # print(query)
     table_name = table_name.capitalize()
-    return execute_query(query, table_name)
+    return execute_query(queries[table_name], table_name)
 
 # Route for displaying the table for Establishment option
 @app.route('/student')
@@ -419,6 +492,13 @@ def search():
 def student():
     table_name = "Student"
     query = "select student.student_id as ID, concat_ws(' ', student.first_name, student.last_name) as Name, student_enrolled.program_name as Program, student_enrolled.dept_name as Department, student_enrolled.start_year as 'Enrolment Year' FROM student join student_enrolled on student.student_id = student_enrolled.student_id"
+    return execute_query(query, table_name)
+
+@app.route('/staff')
+@login_required
+def staff():
+    table_name = "Staff"
+    query = "select staff.staff_id as ID, concat_ws(' ', staff.first_name, staff.last_name) as Name FROM staff "
     return execute_query(query, table_name)
 
 # Route for displaying the table for Finance option
@@ -503,7 +583,7 @@ def execute_query(query, table_name="Placeholder"):
         col_names = [desc[0] for desc in cursor.description]
 
         # Render the table template with query results
-        if table_name not in ['Student', 'Faculty', 'Alumni']:
+        if table_name not in ['Student', 'Faculty', 'Alumni', 'Staff']:
             return render_template('view_members.html', table=table_name, data=rows, columns=col_names)
         else:
             return render_template('view_contacts.html', table=table_name, data=rows, columns=col_names, user_role=current_user.role)
@@ -601,10 +681,17 @@ def contact():
              f"on faculty.faculty_id = faculty_phone_number.faculty_id " \
              f"where faculty.faculty_id = '{value}'"
 
+    query4 = f"select staff.first_name, staff.last_name, staff.email_id, group_concat(staff_phone_number.phone_number separator ',') as phone_numbers " \
+             f"from staff " \
+             f"join staff_phone_number " \
+             f"on staff.staff_id = staff_phone_number.staff_id " \
+             f"where staff.staff_id = '{value}'"
+
     queries = {
         'Student': query1,
         'Alumni': query2,
-        'Faculty': query3
+        'Faculty': query3,
+        'Staff' : query4
     }
 
     cursor.execute(queries[table])

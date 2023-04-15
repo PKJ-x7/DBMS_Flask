@@ -7,6 +7,12 @@
 create database phone_directory;
 use phone_directory;
 
+SELECT faculty.faculty_id, faculty.first_name, faculty.last_name, faculty_dept.dept_name, faculty_dept.designation, faculty_office.block_no, faculty_office.room_no, office.office_phone_number 
+FROM faculty
+join faculty_dept on faculty.faculty_id = faculty_dept.faculty_id 
+join faculty_office on faculty.faculty_id = faculty_office.faculty_id 
+join office on faculty_office.block_no = office.block_no and faculty_office.room_no = office.room_no
+where faculty.first_name='Lucy';
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -35,15 +41,38 @@ CREATE TABLE `alumni` (
   CONSTRAINT `alumni_id_8digits` CHECK (((`alumni_id` >= 10000000) and (`alumni_id` <= 99999999)))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='alumni';
+select * from alumni;
 
---
--- Dumping data for table `alumni`
---
+CREATE TABLE phone_directory_user (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    role VARCHAR(20) NOT NULL
+);
+use phone_directory;
+drop table phone_directory_user;
+INSERT INTO `phone_directory_user` (`id`, `username`, `password`, `email`) VALUES (1, 'Prateek', 'admin', 'admin_phonedir@iitgn.ac.in');
+select * from phone_directory_user;
+update phone_directory_user set role = 'Admin' where username='Admin2';
+delete from phone_directory_user;
+SELECT * FROM phone_directory_user WHERE username = 'admin'--' AND password='';
 
-LOCK TABLES `alumni` WRITE;
-/*!40000 ALTER TABLE `alumni` DISABLE KEYS */;
-INSERT INTO `alumni` VALUES (13110001,'Lila','Orn','lilao@iitgn.ac.in'),(13110002,'Van','Conn','vanc@iitgn.ac.in'),(13110003,'Alena','Nader','alenan@iitgn.ac.in'),(13110004,'Laverne','D\'Amore','laverned@iitgn.ac.in'),(13110005,'Vaughn','Upton','vaughnu@iitgn.ac.in'),(13110006,'Aisha','Brown','aishab@iitgn.ac.in'),(13110007,'Mikel','Berge','mikelb@iitgn.ac.in'),(13110008,'Kristoff','Rodriguez','kristoffr@iitgn.ac.in');
-/*!40000 ALTER TABLE `alumni` ENABLE KEYS */;
+select * from student;
+
+create table locks_(
+	table_names VARCHAR(50),
+    row_id VARCHAR(50),
+    user_id VARCHAR(50)
+);
+delete from locks_;
+select * from locks_;
+
+-- LOCK TABLES `alumni` WRITE;
+-- /*!40000 ALTER TABLE `alumni` DISABLE KEYS */;
+-- INSERT INTO `alumni` VALUES (13110001,'Lila','Orn','lilao@iitgn.ac.in'),(13110002,'Van','Conn','vanc@iitgn.ac.in'),(13110003,'Alena','Nader','alenan@iitgn.ac.in'),(13110004,'Laverne','D\'Amore','laverned@iitgn.ac.in'),(13110005,'Vaughn','Upton','vaughnu@iitgn.ac.in'),(13110006,'Aisha','Brown','aishab@iitgn.ac.in'),(13110007,'Mikel','Berge','mikelb@iitgn.ac.in'),(13110008,'Kristoff','Rodriguez','kristoffr@iitgn.ac.in');
+-- /*!40000 ALTER TABLE `alumni` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -374,7 +403,9 @@ LOCK TABLES `faculty_head_lab` WRITE;
 INSERT INTO `faculty_head_lab` VALUES (12340918,'Computational Nanoelectronic Lab'),(12340919,'Electrical Engineering Lab'),(12340917,'Experimental Complex Fluids Lab'),(12340920,'Material Characterization Lab'),(12340921,'Wet Chemistry Lab');
 /*!40000 ALTER TABLE `faculty_head_lab` ENABLE KEYS */;
 UNLOCK TABLES;
-
+select * from staff;
+select staff.first_name, staff.last_name, service_staff.roles, staff.email_id from staff join service_staff on staff.staff_id = service_staff.staff_id 
+where service_staff.service_name = 'Library';
 --
 -- Table structure for table `faculty_head_service`
 --
@@ -452,7 +483,7 @@ CREATE TABLE `faculty_phone_number` (
 --
 -- Dumping data for table `faculty_phone_number`
 --
-
+select * from phone_directory_user;
 LOCK TABLES `faculty_phone_number` WRITE;
 /*!40000 ALTER TABLE `faculty_phone_number` DISABLE KEYS */;
 INSERT INTO `faculty_phone_number` VALUES (10861895,7821206984),(11643101,9118275475),(12340912,7118567696),(12340913,7952894498),(12340914,8970775330),(12340915,7501683615),(12340915,9317377416),(12340916,8509168418),(12340916,8525030570),(12340917,7165817436),(12340917,9179283791),(12340918,8616334124),(12340918,8652960219),(12340919,7339225972),(12340919,7373870719),(12340920,7698298379),(12340920,9483675231),(12340921,7419477060),(12340921,8071345509),(12340922,9147490486);
@@ -879,7 +910,7 @@ CREATE TABLE `student_council_member` (
   `student_id` int NOT NULL,
   `council_name` varchar(30) DEFAULT NULL,
   `position` varchar(30) DEFAULT NULL,
-  PRIMARY KEY (`student_id`),
+  PRIMARY KEY (`student_id`,`council_name`),
   KEY `fk_council_name` (`council_name`),
   CONSTRAINT `fk_council_name` FOREIGN KEY (`council_name`) REFERENCES `student_council` (`council_name`) on delete cascade,
   CONSTRAINT `fk_student_ID` FOREIGN KEY (`student_id`) REFERENCES `student` (`student_id`) on delete cascade
@@ -967,7 +998,7 @@ CREATE TABLE `student_group_member` (
   `student_id` int NOT NULL,
   `group_name` varchar(50) DEFAULT NULL,
   `position` varchar(30) DEFAULT NULL,
-  PRIMARY KEY (`student_id`),
+  PRIMARY KEY (`student_id`,`group_name`),
   KEY `fk_group_name` (`group_name`),
   CONSTRAINT `fk_group_name` FOREIGN KEY (`group_name`) REFERENCES `student_group` (`group_name`) ON DELETE CASCADE,
   CONSTRAINT `fk_student_for_group_ID` FOREIGN KEY (`student_id`) REFERENCES `student` (`student_id`) on delete cascade
@@ -1105,133 +1136,5 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
-show tables;
-
-select student.first_name, student.last_name, student_enrolled.program_name, student_enrolled.dept_name
-FROM student
-join student_enrolled
-on student.student_id = student_enrolled.student_id;
-
-select alumni.first_name, alumni.last_name, alumni_enrolled.program_name, alumni_enrolled.dept_name, alumni_enrolled.end_year
-FROM alumni
-join alumni_enrolled
-on alumni.alumni_id = alumni_enrolled.alumni_id;
-
-select council_advisor.council_name, student_council.email_id, faculty.first_name, faculty.last_name
-from council_advisor
-join faculty
-on faculty.faculty_id = council_advisor.faculty_id
-join student_council
-on student_council.council_name = council_advisor.council_name;
-
-
-select student.first_name, student.last_name, student_council_member.position, student_enrolled.program_name, student_enrolled.dept_name
-from student
-join student_council_member
-on student.student_id = student_council_member.student_id
-join student_enrolled
-on student.student_id = student_enrolled.student_id
-where student_council_member.council_name = "Welfare Council";
-
-select group_part_of.group_name, student_group.email_id, group_part_of.council_name
-from group_part_of
-join student_group
-on student_group.group_name = group_part_of.group_name;
-
-
-select student.first_name, student.last_name, student_group_member.position, student_enrolled.program_name, student_enrolled.dept_name
-from student
-join student_group_member
-on student.student_id = student_group_member.student_id
-join student_enrolled
-on student.student_id = student_enrolled.student_id
-where student_group_member.group_name = "Vinteo";
-
-select service.service_name, service.email_id, service_office.block_no, service_office.room_no, office.office_phone_number, faculty.first_name, faculty.last_name, faculty_head_service.designation
-from faculty_head_service
-join service
-on service.service_name = faculty_head_service.service_name
-join faculty
-on faculty_head_service.faculty_id = faculty.faculty_id
-join service_office
-on service_office.service_name = service.service_name
-join office
-on service_office.block_no = office.block_no and service_office.room_no = office.room_no;
-
-select staff.first_name, staff.last_name, service_staff.roles
-from staff
-join service_staff
-on staff.staff_id = service_staff.staff_id
-where service_staff.service_name = "Student Affairs";
-
-select centre.centre_name, centre.email_id, centre_office.block_no, centre_office.room_no, office.office_phone_number, faculty.first_name, faculty.last_name, faculty_head_centre.designation
-from faculty_head_centre
-join centre
-on centre.centre_name = faculty_head_centre.centre_name
-join faculty
-on faculty_head_centre.faculty_id = faculty.faculty_id
-join centre_office
-on centre_office.centre_name = centre.centre_name
-join office
-on centre_office.block_no = office.block_no and centre_office.room_no = office.room_no;
-
-select staff.first_name, staff.last_name, centre_staff.roles
-from staff
-join centre_staff
-on staff.staff_id = centre_staff.staff_id
-where centre_staff.centre_name = "CCL";
-
-select lab.lab_name, lab.email_id, lab_dept.dept_name, lab_office.block_no, lab_office.room_no, office.office_phone_number
-from lab_dept
-join lab
-on lab.lab_name = lab_dept.lab_name
-join lab_office
-on lab_office.lab_name = lab.lab_name
-join office
-on lab_office.block_no = office.block_no and lab_office.room_no = office.room_no;
-
-select staff.first_name, staff.last_name, lab_staff.roles
-from staff
-join lab_staff
-on staff.staff_id = lab_staff.staff_id
-where lab_staff.lab_name = "Design and Innovation Lab";
-
-SELECT faculty.first_name, faculty.last_name, faculty_dept.dept_name, faculty_dept.designation, faculty_office.block_no, faculty_office.room_no, office.office_phone_number 
-FROM faculty 
-join faculty_dept
-on faculty.faculty_id = faculty_dept.faculty_id
-join faculty_office
-on faculty.faculty_id = faculty_office.faculty_id
-join office
-on faculty_office.block_no = office.block_no and faculty_office.room_no = office.room_no;
-
-select * from faculty_head_lab;
-
-select student.first_name, student.last_name, student.email_id, group_concat(student_phone_number.phone_number separator '\n') as phone_numbers
-from student
-join student_phone_number
-on student.student_id = student_phone_number.student_id
-where student.student_id = '19110001';
-
-select faculty.first_name, faculty.last_name, faculty.email_id, faculty_phone_number.phone_number
-from faculty
-join faculty_phone_number
-on faculty.faculty_id = faculty_phone_number.faculty_id
-where faculty.faculty_id = '19110001';
-
-select alumni.first_name, alumni.last_name, alumni.email_id, alumni_phone_number.phone_number
-from alumni
-join alumni_phone_number
-on alumni.alumni_id = alumni_phone_number.alumni_id
-where alumni.alumni_id = '19110001';
-select * from student;
-
-
-
-
-
-
-
 
 -- Dump completed on 2023-03-19 21:29:57

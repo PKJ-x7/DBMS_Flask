@@ -45,6 +45,19 @@ label{
 </head>
 
 <body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+            <script>
+		        // redirect to Google after 5 seconds
+                setTimeout(function() {window.location.href = '/admin_view';}, 2000);
+            </script>
+        {% endif %}
+    {% endwith %}
     <h1>{{ table }} Table</h1>
     <form action="/rename_table/{{ table }}" method="post">
     <label for="new_table_name">New Table Name:</label>
