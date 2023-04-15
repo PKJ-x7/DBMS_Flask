@@ -19,7 +19,7 @@ login_manager.login_view = 'login'
 db = mysql.connector.connect(
   host="localhost",
   user="root",
-  password="pkj#rolls#sql",
+  password="thursday@1289",
   database="phone_directory"
 )
 
@@ -386,7 +386,7 @@ def people_table_links():
 @login_required
 def faculty():
     table_name = "Faculty"
-    query = "SELECT faculty.faculty_id, faculty.first_name, faculty.last_name, faculty_dept.dept_name, faculty_dept.designation, faculty_office.block_no, faculty_office.room_no, office.office_phone_number  " \
+    query = "SELECT faculty.faculty_id as ID, CONCAT_WS(' ',faculty.first_name,faculty.last_name) as Name, faculty_dept.dept_name as Department, faculty_dept.designation as Designation, CONCAT_WS('/',faculty_office.block_no, faculty_office.room_no) as Office, office.office_phone_number as 'Office Number'  " \
             "FROM faculty join faculty_dept on faculty.faculty_id = faculty_dept.faculty_id " \
             "join faculty_office on faculty.faculty_id = faculty_office.faculty_id " \
             "join office on faculty_office.block_no = office.block_no and faculty_office.room_no = office.room_no"
@@ -404,7 +404,7 @@ def search():
         return render_template('login.html', error=error)
     name = request.form['search_input'].split()[0].capitalize()
     # print(name)
-    query = f"SELECT faculty.faculty_id, faculty.first_name, faculty.last_name, faculty_dept.dept_name, faculty_dept.designation, faculty_office.block_no, faculty_office.room_no, office.office_phone_number  " \
+    query = f"SELECT faculty.faculty_id as ID, CONCAT_WS(' ',faculty.first_name,faculty.last_name) as Name, faculty_dept.dept_name as Department, faculty_dept.designation as Designation, CONCAT_WS('/',faculty_office.block_no, faculty_office.room_no) as Office, office.office_phone_number as 'Office Number'  " \
             f"FROM faculty join faculty_dept on faculty.faculty_id = faculty_dept.faculty_id " \
             f"join faculty_office on faculty.faculty_id = faculty_office.faculty_id " \
             f"join office on faculty_office.block_no = office.block_no and faculty_office.room_no = office.room_no " \
@@ -418,7 +418,7 @@ def search():
 @login_required
 def student():
     table_name = "Student"
-    query = "select student.student_id, student.first_name, student.last_name, student_enrolled.program_name, student_enrolled.dept_name FROM student join student_enrolled on student.student_id = student_enrolled.student_id"
+    query = "select student.student_id as ID, concat_ws(' ', student.first_name, student.last_name) as Name, student_enrolled.program_name as Program, student_enrolled.dept_name as Department, student_enrolled.start_year as 'Enrolment Year' FROM student join student_enrolled on student.student_id = student_enrolled.student_id"
     return execute_query(query, table_name)
 
 # Route for displaying the table for Finance option
@@ -426,7 +426,7 @@ def student():
 @login_required
 def alumni():
     table_name = "Alumni"
-    query = "select alumni.alumni_id, alumni.first_name, alumni.last_name, alumni_enrolled.program_name, alumni_enrolled.dept_name, alumni_enrolled.end_year FROM alumni join alumni_enrolled on alumni.alumni_id = alumni_enrolled.alumni_id"
+    query = "select alumni.alumni_id as ID, concat_ws(' ', alumni.first_name, alumni.last_name) as Name, alumni_enrolled.program_name as Program, alumni_enrolled.dept_name as Department, alumni_enrolled.end_year as 'Graduation Year' FROM alumni join alumni_enrolled on alumni.alumni_id = alumni_enrolled.alumni_id"
     return execute_query(query, table_name)
 
 # Route for displaying the table for Administrative Branches option
@@ -434,7 +434,7 @@ def alumni():
 @login_required
 def student_council():
     table_name = "Student Council"
-    query = "select council_advisor.council_name, student_council.email_id, faculty.first_name, faculty.last_name from council_advisor join faculty on faculty.faculty_id = council_advisor.faculty_id " \
+    query = "select council_advisor.council_name as 'Council Name', student_council.email_id as Email, concat_ws(' ',faculty.first_name, faculty.last_name) as 'Faculty Advisor' from council_advisor join faculty on faculty.faculty_id = council_advisor.faculty_id " \
             "join student_council on student_council.council_name = council_advisor.council_name"
     return execute_query(query, table_name)
 
@@ -443,7 +443,7 @@ def student_council():
 @login_required
 def student_group():
     table_name = "Student Group"
-    query = "select group_part_of.group_name, student_group.email_id, group_part_of.council_name from group_part_of " \
+    query = "select group_part_of.group_name as 'Group Name', student_group.email_id as Email, group_part_of.council_name as 'Part Of' from group_part_of " \
             "join student_group on student_group.group_name = group_part_of.group_name"
     return execute_query(query, table_name)
 
@@ -452,7 +452,7 @@ def student_group():
 @login_required
 def services():
     table_name = "Services"
-    query = "select service.service_name, service.email_id, service_office.block_no, service_office.room_no, office.office_phone_number, faculty.first_name, faculty.last_name, faculty_head_service.designation " \
+    query = "select service.service_name as Service, service.email_id as Email, concat_ws('/',service_office.block_no, service_office.room_no) as Office, office.office_phone_number as 'Phone Number', concat_ws(' ',faculty.first_name, faculty.last_name) as 'Faculty Coordinator', faculty_head_service.designation as Designation " \
             "from faculty_head_service join service on service.service_name = faculty_head_service.service_name join faculty " \
             "on faculty_head_service.faculty_id = faculty.faculty_id join service_office " \
             "on service_office.service_name = service.service_name join office " \
@@ -464,7 +464,7 @@ def services():
 @login_required
 def centre():
     table_name = "Centres"
-    query = "select centre.centre_name, centre.email_id, centre_office.block_no, centre_office.room_no, office.office_phone_number, faculty.first_name, faculty.last_name, faculty_head_centre.designation " \
+    query = "select centre.centre_name as Centre, centre.email_id as Email, concat_ws('/', centre_office.block_no, centre_office.room_no) as Office, office.office_phone_number as 'Phone Number', concat_ws(' ', faculty.first_name, faculty.last_name) as 'Faculty Coordinator', faculty_head_centre.designation as Designation " \
             "from faculty_head_centre join centre " \
             "on centre.centre_name = faculty_head_centre.centre_name join faculty " \
             "on faculty_head_centre.faculty_id = faculty.faculty_id " \
@@ -478,7 +478,7 @@ def centre():
 @login_required
 def labs():
     table_name = "Labs"
-    query = "select lab.lab_name, lab.email_id, lab_dept.dept_name, lab_office.block_no, lab_office.room_no, office.office_phone_number from lab_dept " \
+    query = "select lab.lab_name as Lab, lab.email_id as Email, lab_dept.dept_name as Department, concat_ws('/',lab_office.block_no, lab_office.room_no) as Office, office.office_phone_number as 'Phone Number' from lab_dept " \
             "join lab on lab.lab_name = lab_dept.lab_name join lab_office on lab_office.lab_name = lab.lab_name " \
             "join office on lab_office.block_no = office.block_no and lab_office.room_no = office.room_no"
     return execute_query(query, table_name)
@@ -526,13 +526,13 @@ def members():
     # print("MEMEBERS:", table, primary_key, value)
     cursor = db.cursor()
 
-    query1 = f"select student.first_name, student.last_name, student_council_member.position, student_enrolled.program_name, student_enrolled.dept_name,student.email_id " \
+    query1 = f"select student.student_id as ID, concat_ws(' ',student.first_name, student.last_name) as Members, student_council_member.position as Position, student_enrolled.program_name as Program, student_enrolled.dept_name as Department,student.email_id as Email " \
              f"from student join student_council_member on student.student_id = student_council_member.student_id " \
              f"join student_enrolled " \
              f"on student.student_id = student_enrolled.student_id " \
              f"where student_council_member.council_name = '{value}'"
 
-    query2 = f"select student.first_name, student.last_name, student_group_member.position, student_enrolled.program_name, student_enrolled.dept_name,student.email_id " \
+    query2 = f"select student.student_id as ID, concat_ws(' ',student.first_name, student.last_name) as Members, student_group_member.position as Position, student_enrolled.program_name as Program, student_enrolled.dept_name as Department,student.email_id as Email " \
              f"from student " \
              f"join student_group_member " \
              f"on student.student_id = student_group_member.student_id " \
@@ -540,18 +540,18 @@ def members():
              f"on student.student_id = student_enrolled.student_id " \
              f"where student_group_member.group_name = '{value}'"
 
-    query3 = f"select staff.first_name, staff.last_name, service_staff.roles, staff.email_id from staff " \
+    query3 = f"select staff.staff_id as ID, concat_ws(' ',staff.first_name, staff.last_name) as Staff, service_staff.roles as 'Role', staff.email_id as Email from staff " \
              f"join service_staff " \
              f"on staff.staff_id = service_staff.staff_id " \
              f"where service_staff.service_name = '{value}'"
 
-    query4 = f"select staff.first_name, staff.last_name, centre_staff.roles, staff.email_id " \
+    query4 = f"select staff.staff_id as ID,concat_ws(' ',staff.first_name, staff.last_name) as Staff, centre_staff.roles as 'Role', staff.email_id as Email " \
              f"from staff " \
              f"join centre_staff " \
              f"on staff.staff_id = centre_staff.staff_id " \
              f"where centre_staff.centre_name = '{value}'"
 
-    query5 = f"select staff.first_name, staff.last_name, lab_staff.roles, staff.email_id " \
+    query5 = f"select staff.staff_id as ID,concat_ws(' ',staff.first_name, staff.last_name) as Staff, lab_staff.roles as 'Role', staff.email_id as Email " \
              f"from staff " \
              f"join lab_staff " \
              f"on staff.staff_id = lab_staff.staff_id " \
