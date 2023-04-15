@@ -156,7 +156,9 @@ label{
                 {% for column in columns %}
                 <th>{{ column }}</th>
                 {% endfor %}
+            {% if user_role!="Student" %}
                 <th>Contact Details</th>
+            {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -165,6 +167,7 @@ label{
                 {% for column in row %}
                 <td>{{ column }}</td>
                 {% endfor %}
+                {% if user_role!="Student" %}
                 <td>
                     <form action="/contact" method="post">
                         <input type="hidden" name="table" value="{{ table }}">
@@ -172,6 +175,7 @@ label{
                         <input type="hidden" name="value" value="{{ row[0] }}">
                         <button type="submit">Contact</button>
                     </form>
+                {% endif %}
             {% endfor %}
     </table>
     <footer>

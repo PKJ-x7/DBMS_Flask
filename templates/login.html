@@ -6,7 +6,35 @@
 		<link rel="stylesheet" href="{{ url_for('static', filename='styles_login.css') }}">
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
 	</head>
+    <style>
+    .flash-message {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: black;
+        color: cyan;
+        font-weight: bold;
+        font-size: 500px;
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 9999;
+    }
+    </style>
 	<body>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-message">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+                <script>
+		        // redirect to Google after 5 seconds
+                setTimeout(function() {window.location.href = '/login';}, 2000);
+	            </script>
+            {% endif %}
+        {% endwith %}
 		<div class="login">
 			<h1>Login</h1>
 			<div class="links">
